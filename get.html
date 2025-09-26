@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻宝游戏</title>
+    <style>
+        /* 主题颜色 */
+        :root {
+            --primary-blue: #1e88e5;
+            --dark-blue: #1565c0;
+            --light-blue: #90caf9;
+            --primary-green: #43a047;
+            --dark-green: #2e7d32;
+            --light-green: #a5d6a7;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --purple: #8e44ad;
+            --red: #e74c3c;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #0a3d62, #1e88e5, #43a047);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 5s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            animation: containerSlide 0.8s ease-out;
+        }
+        
+        @keyframes containerSlide {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .header {
+            background: linear-gradient(45deg, var(--primary-blue), var(--primary-green));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 8s infinite linear;
+        }
+        
+        @keyframes pulse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: titleGlow 3s infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            from { text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+            to { text-shadow: 2px 2px 20px rgba(255,255,255,0.7); }
+        }
+        
+        .adventure-area {
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
+        
+        .character {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            min-height: 200px;
+            position: relative;
+        }
+        
+        .adventurer {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #8B4513, #CD853F);
+            border-radius: 50% 50% 40% 40%;
+            position: relative;
+            animation: adventurerIdle 3s infinite;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: all 0.5s ease;
+        }
+        
+        @keyframes adventurerIdle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .adventurer::before {
+            content: "🧙";
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-green));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        .adventure-log {
+            flex: 2;
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 5px solid var(--primary-blue);
+            position: relative;
+        }
+        
+        .log-entry {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: logEntrySlide 0.5s ease forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .log-entry::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--primary-blue);
+        }
+        
+        .log-entry.success::before { background: var(--primary-green); }
+        .log-entry.danger::before { background: var(--red); }
+        .log-entry.warning::before { background: #ffb300; }
+        .log-entry.purple::before { background: var(--purple); }
+        
+        @keyframes logEntrySlide {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .choice-container {
+            display: none;
+            padding: 15px;
+            background: rgba(30, 136, 229, 0.1);
+            border-radius: 10px;
+            margin: 15px 0;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .choice-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .choice-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(45deg, var(--primary-blue), var(--dark-blue));
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .choice-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+        }
+        
+        .choice-btn.green {
+            background: linear-gradient(45deg, var(--primary-green), var(--dark-green));
+        }
+        
+        .choice-btn.red {
+            background: linear-gradient(45deg, var(--red), #c0392b);
+        }
+        
+        .choice-btn.purple {
+            background: linear-gradient(45deg, var(--purple), #6c3483);
+        }
+        
+        .controls {
+            padding: 20px;
+            text-align: center;
+            background: var(--dark-blue);
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--primary-green), var(--dark-green));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        button:disabled::before {
+            display: none;
+        }
+        
+        /* 图标样式 */
+        .icon {
+            font-size: 20px;
+            margin-right: 10px;
+            display: inline-block;
+            animation: iconBounce 1s infinite;
+        }
+        
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .treasure-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            opacity: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        @keyframes treasureReveal {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        
+        .character-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 80px;
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        @keyframes characterAppear {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); opacity: 1; }
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: rgba(30, 136, 229, 0.1);
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .adventure-area {
+                min-height: 400px;
+            }
+            
+            .adventure-log {
+                height: 300px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .choice-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景 -->
+    <div class="stars" id="stars"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏴‍☠️ 神秘宝藏寻宝记</h1>
+            <p>踏上这段充满惊喜的冒险旅程，寻找传说中的宝藏！</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="healthValue">100</div>
+                <div>生命值 ❤️</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="luckValue">50</div>
+                <div>幸运值 🍀</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="goldValue">0</div>
+                <div>金币 🪙</div>
+            </div>
+        </div>
+        
+        <div class="adventure-area">
+            <div class="character">
+                <div class="adventurer" id="adventurer"></div>
+                <div class="treasure-effect" id="treasureEffect"></div>
+                <div class="character-effect" id="characterEffect"></div>
+            </div>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div class="adventure-log" id="log">
+                <div class="log-entry info">
+                    <span class="icon">🚀</span> 欢迎来到寻宝冒险！点击开始按钮启程...
+                </div>
+            </div>
+            
+            <div class="choice-container" id="choiceContainer">
+                <div id="choiceText"></div>
+                <div class="choice-buttons" id="choiceButtons"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">开始寻宝冒险</button>
+            <button id="resetBtn" disabled>重新开始</button>
+        </div>
+    </div>
+
+    <!-- 引入JavaScript文件 -->
+    <script src="treasure-async.js"></script>
+</body>
+</html>
